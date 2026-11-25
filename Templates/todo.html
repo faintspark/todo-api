@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My To-Do List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e24;
+            color: #ffffff;
+            text-align: center;
+            padding: 50px;
+        }
+        input {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: none;
+            width: 300px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #ff6b81;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background-color: #2f3542;
+            margin: 10px auto;
+            padding: 15px;
+            border-radius: 5px;
+            max-width: 400px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .done {
+            text-decoration: line-through;
+            color: #7bed9f;
+        }
+    </style>
+</head>
+<body>
+    <h1>My To-Do List</h1>
+    
+    <input type="text" id="taskInput" placeholder="Enter a new task...">
+    <button onclick="addTask()">Add Task</button>
+
+    <ul id="taskList"></ul>
+
+    <script>
+        // 1. Fetch tasks from the backend and display them
+        async function loadTasks() {
+            const response = await fetch("/tasks");
+            const tasks = await response.json();
+            
+            const list = document.getElementById("taskList");
+            list.innerHTML = ""; // Clear the list
+            
+            for (let task of tasks) {
+                // If is_done is 1, add the "done" class for strikethrough
+                const className = task.is_done === 1 ? "done" : "";
+                
+                // Add the task to the HTML list
+                                list.innerHTML += `
+                    <li class="${className}">
+                        ${task.task}
+                        <div>
+                            <span style="font-size:12px; color:#aaa; margin-right: 10px;">ID: ${task.id}</span>
+                            <button onclick="deleteTask(${task.id})" style="background-color: #ff4757; padding: 5px 10px; font-size: 12px;">X</button>
+                        </div>
+                    </li>
+                `;
+            }
+        }
+
+        // 2. Send a new task to the backend
+        async function addTask() {
+            const taskText = document.getElementById("taskInput").value;
+            if (!taskText) return; // Don't add empty tasks
+            
+            // Make a POST request to your API
+            await fetch("/add_task", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ task: taskText })
+            });
+            
+            // Clear the input box and reload the list
+            document.getElementById("taskInput").value = "";
+            loadTasks();
+        }
+
+        async function deleteTask(id) {
+            await fetch(`/tasks/${id}`, { method: "DELETE" });
+            loadTasks();
+        }
+
+        // 3. Load tasks as soon as the page opens
+        loadTasks();
+    </script>
+</body>
+</html>
