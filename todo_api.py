@@ -18,6 +18,11 @@ cursor.execute("""
 connection.commit()
 connection.close()
 
+@app.get("/", response_class=HTMLResponse)
+def read_root():
+    with open("Templates/todo.html", "r", encoding="utf-8") as f:
+        return f.read()
+
 @app.get("/tasks")
 def tasks():
     connection = sqlite3.connect("todo.db")
