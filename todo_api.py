@@ -19,7 +19,7 @@ def create_table():
     cur.execute("""
         CREATE TABLE IF NOT EXISTS tasks (
             id SERIAL PRIMARY KEY,
-            tasks TEXT,
+            task TEXT,
             is_done INTEGER DEFAULT 0
         )
     """)
@@ -63,7 +63,7 @@ def add_task(new_task: TaskInput):
     connection = psycopg2.connect(DATABASE_URL)
     cursor = connection.cursor()
 
-    cursor.execute("INSERT INTO tasks (task, is_done) VALUES (?, 0)", (new_task.task,))
+    cursor.execute("INSERT INTO tasks (task, is_done) VALUES (%s, 0)", (new_task.task,))
 
     connection.commit()
     connection.close()
@@ -72,10 +72,10 @@ def add_task(new_task: TaskInput):
 
 @app.put("/tasks/{task_id}/done")
 def mark_done(task_id: int):
-    connection = sqlite3.connect("todo.db")
+    connection = psycopg2.connect(DATABASE_URL)
     cursor = connection.cursor()
 
-    cursor.execute("UPDATE tasks SET is_done = 1 WHERE id = ?", (task_id,))
+    cursor.execute("UPDATE tasks SET is_done = 1 WHERE id = %s", (task_id,))
 
     connection.commit()
     connection.close()
@@ -84,7 +84,7 @@ def mark_done(task_id: int):
 
 @app.get("/todo", response_class=HTMLResponse)
 def serve_todo_page():
-    with open("templates/todo.html", "r", encoding="utf-8") as f:
+    with open("Templates/todo.html", "r", encoding="utf-8") as f:
         return f.read()
 
 @app.delete("/tasks/{task_id}")
@@ -92,7 +92,7 @@ def delete_task(task_id: int):
     connection = psycopg2.connect(DATABASE_URL)
     cursor = connection.cursor()
 
-    cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    cursor.execute("DELETE FROM tasks WHERE id = %s", (task_id,))
 
     connection.commit()
     connection.close()
