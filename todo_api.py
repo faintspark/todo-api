@@ -28,8 +28,6 @@ def create_table():
     cur.close()
     conn.close()
 
-create_table()
-
 @app.get("/", response_class=HTMLResponse)
 def read_root():
     with open("Templates/todo.html", "r", encoding="utf-8") as f:
