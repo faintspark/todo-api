@@ -1,22 +1,34 @@
+import os
 import sqlite3
+import psycopg2
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 app = FastAPI()
 
-connection = sqlite3.connect("todo.db")
-cursor = connection.cursor()
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        task TEXT,
-        is_done INTEGER
-    )
-""")
-connection.commit()
-connection.close()
+if not DATABASE_URL:
+    print("Warning: DATABASE_URL not set. Make sure to add it in Railway.")
+
+def create_table():
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS tasks (
+            id SERIAL PRIMARY KEY,
+            tasks TEXT,
+            is_done INTEGER DEFAULT 0
+        )
+    """)
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+create_table()
 
 @app.get("/", response_class=HTMLResponse)
 def read_root():
@@ -25,7 +37,7 @@ def read_root():
 
 @app.get("/tasks")
 def tasks():
-    connection = sqlite3.connect("todo.db")
+    connection = psycopg2.connect(DATABASE_URL)
     cursor = connection.cursor()
 
     cursor.execute("SELECT id, task, is_done FROM tasks")
@@ -48,7 +60,7 @@ class TaskInput(BaseModel):
 
 @app.post("/add_task")
 def add_task(new_task: TaskInput):
-    connection = sqlite3.connect("todo.db")
+    connection = psycopg2.connect(DATABASE_URL)
     cursor = connection.cursor()
 
     cursor.execute("INSERT INTO tasks (task, is_done) VALUES (?, 0)", (new_task.task,))
@@ -77,7 +89,7 @@ def serve_todo_page():
 
 @app.delete("/tasks/{task_id}")
 def delete_task(task_id: int):
-    connection = sqlite3.connect("todo.db")
+    connection = psycopg2.connect(DATABASE_URL)
     cursor = connection.cursor()
 
     cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
