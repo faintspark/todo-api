@@ -98,3 +98,11 @@ def delete_task(task_id: int):
     connection.close()
 
     return {"message": f"Task {task_id} deleted!"}
+
+@app.get("/setup_db")
+def setup_db():
+    try:
+        create_table()
+        return {"message": "Databade and table created successfully!"}
+    except Exception as e:
+        return {"error": str(e)}
