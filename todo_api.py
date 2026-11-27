@@ -100,7 +100,7 @@ class UserCreate(BaseModel):
     username: str
     password: str
 
-class UverLogin(BaseModel):
+class UserLogin(BaseModel):
     username: str
     password: str
 
@@ -140,3 +140,40 @@ def setup_db():
         return {"message": "Databade and table created successfully!"}
     except Exception as e:
         return {"error": str(e)}
+
+@app.post("/register")
+def register(user: UserCreate):
+    connection = psycopg2.connect(os.environ.get("DATABASE_URL"))
+    cursor = connection.cursor()
+
+    hashed_pw = hash_password(user.password)
+
+    try:
+        cursor.execute(
+            "INSERT INTO users (username, password) VALUES (%s, %s)",
+            (user.username, hashed_pw)
+        )
+        connection.commit()
+        return {"message": "User registered successfully!"}
+    finally:
+        connection.close()
+
+@app.post("/login")
+def login(user: UserLogin):
+    connection = psycopg2.connect(os.environ.get("DATABASE_URL"))
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT password FROM users WHERE username = %s", (user.username,))
+    result = cursor.fetchone()
+    connection.close()
+
+    if not result:
+        return {"error": "User not found!"}
+
+    stored_hash_password = result[0]
+    if not verify_password(user.password, stored_hash_password):
+        return {"error": "Incorrect Password!"}
+
+    token = create_access_token({"username": user.username})
+
+    return {"message": "Login Successful!", "token": token}
