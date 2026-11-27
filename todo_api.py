@@ -48,7 +48,7 @@ def create_table():
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
             username TEXT UNIQUE,
-            password TEZT
+            password TEXT
         )
     """)
 
