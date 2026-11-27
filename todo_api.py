@@ -1,11 +1,31 @@
 import os
 import sqlite3
 import psycopg2
+import datetime
+from jose import jwt
 from fastapi import FastAPI
 from pydantic import BaseModel
+from passlib.context import CryptContext
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 app = FastAPI()
+
+SECRET_KEY = "musa_ultra_secret_key"
+ALGORITHM = "HS256"
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str):
+    return pwd_context.hash(password)
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.datetime.utcnow() + datetime.timedelta(hours=2)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
@@ -21,6 +41,14 @@ def create_table():
             id SERIAL PRIMARY KEY,
             task TEXT,
             is_done INTEGER DEFAULT 0
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username TEXT UNIQUE,
+            password TEZT
         )
     """)
 
@@ -67,6 +95,14 @@ def add_task(new_task: TaskInput):
     connection.close()
 
     return {"message": f"Successfully added {new_task.task}!"}
+
+class UserCreate(BaseModel):
+    username: str
+    password: str
+
+class UverLogin(BaseModel):
+    username: str
+    password: str
 
 @app.put("/tasks/{task_id}/done")
 def mark_done(task_id: int):
