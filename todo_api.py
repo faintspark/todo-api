@@ -2,16 +2,30 @@ import os
 import sqlite3
 import psycopg2
 import datetime
-from jose import jwt
-from fastapi import FastAPI
 from pydantic import BaseModel
+from jose import jwt, JWTError
 from passlib.context import CryptContext
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 app = FastAPI()
 
 SECRET_KEY = "musa_ultra_secret_key"
 ALGORITHM = "HS256"
+
+security = HTTPBearer()
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token= SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("username")
+        if username is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return username
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -62,7 +76,7 @@ def read_root():
         return f.read()
 
 @app.get("/tasks")
-def tasks():
+def get_tasks(username: str = Depends(verify_token)):
     connection = psycopg2.connect(DATABASE_URL)
     cursor = connection.cursor()
 
@@ -155,6 +169,9 @@ def register(user: UserCreate):
         )
         connection.commit()
         return {"message": "User registered successfully!"}
+    except psycopg2.errors.UniqueViolation:
+        connection.rollback()
+        return {"error": "username already exists!"}
     finally:
         connection.close()
 
