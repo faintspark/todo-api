@@ -58,20 +58,25 @@
     <ul id="taskList"></ul>
 
     <script>
-        // 1. Fetch tasks from the backend and display them
+        // Add a helper function to get the token
+        function getToken() {
+            // PASTE YOUR JWT TOKEN HERE
+            return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Ik11c2EiLCJleHAiOjE3OTU4NDg2NzB9.fBvopsUNul_QyZ440WceukwMYgb8APkuBnOqpN6PBmU"; 
+        }
+
         async function loadTasks() {
-            const response = await fetch("/tasks");
+            const response = await fetch("/tasks", {
+                headers: { "Authorization": "Bearer " + getToken() }
+            });
             const tasks = await response.json();
             
             const list = document.getElementById("taskList");
-            list.innerHTML = ""; // Clear the list
+            list.innerHTML = ""; 
             
             for (let task of tasks) {
-                // If is_done is 1, add the "done" class for strikethrough
                 const className = task.is_done === 1 ? "done" : "";
                 
-                // Add the task to the HTML list
-                                list.innerHTML += `
+                list.innerHTML += `
                     <li class="${className}">
                         ${task.task}
                         <div>
@@ -83,29 +88,32 @@
             }
         }
 
-        // 2. Send a new task to the backend
         async function addTask() {
             const taskText = document.getElementById("taskInput").value;
-            if (!taskText) return; // Don't add empty tasks
+            if (!taskText) return;
             
-            // Make a POST request to your API
             await fetch("/add_task", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + getToken()
+                },
                 body: JSON.stringify({ task: taskText })
             });
             
-            // Clear the input box and reload the list
             document.getElementById("taskInput").value = "";
             loadTasks();
         }
 
         async function deleteTask(id) {
-            await fetch(`/tasks/${id}`, { method: "DELETE" });
+            await fetch(`/tasks/${id}`, { 
+                method: "DELETE",
+                headers: { "Authorization": "Bearer " + getToken() }
+            });
             loadTasks();
         }
 
-        // 3. Load tasks as soon as the page opens
+        // Load tasks as soon as the page opens
         loadTasks();
     </script>
 </body>

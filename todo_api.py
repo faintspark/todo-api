@@ -99,7 +99,7 @@ class TaskInput(BaseModel):
     task: str
 
 @app.post("/add_task")
-def add_task(new_task: TaskInput):
+def add_task(new_task: TaskInput, username: str = Depends(verify_token)):
     connection = psycopg2.connect(DATABASE_URL)
     cursor = connection.cursor()
 
